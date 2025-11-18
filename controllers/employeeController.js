@@ -1,57 +1,67 @@
-import {employeeData} from "../model/employees.js";
+import EmployeeData from "../model/employees.js";
 
-// Get all employee details
-export const getAllEmployeeDetails = (req, res) => {
-  console.log("Employee data requested", employeeData.data);
-  res.json(employeeData.data);
+export const getAllEmployeeDetails = async (req, res) => {
+  const employees = await EmployeeData.find();
+  if (!employees) return res.json("message: No data found!");
+  res.json(employees);
 };
 
-export const addNewEmployee = (req, res) => { 
-  const newEmployee = req.query;
-  newEmployee.id = employeeData.data[employeeData.data.length-1].id + 1; 
-  console.log('Adding new employee :', newEmployee.id);
-  employeeData.data.push(newEmployee);
-  res
-    .status(201)
-    .json({
-      message: "Employee data added successfully",
-      employee: newEmployee,
-    });
-};
+export const addNewEmployee = async (req, res) => {
+  if (!req?.query?.firstname || !req?.query?.lastname) {
+    return res
+      .status(400)
+      .json({ message: "Both First name and last name are required" });
+  }
 
-export const updateEmployeeDetails = (req, res) => {
-  const empId = parseInt(req.query.id);
-  console.log('Updating employee :', req);
-  const updatedData = req.query;
-  const employeeIndex = employeeData.data.findIndex(emp => emp.id === empId);
-  if (employeeIndex !== -1) {
-    employeeData.data[employeeIndex] = { id: parseInt(empId), firstname: updatedData.firstname, lastname: updatedData.lastname };
-    res.json({
-      message: "Employee data updated successfully",
-      employee: employeeData.data[employeeIndex],
+  try {
+    const result = await EmployeeData.create({
+      firstname: req.query.firstname,
+      lastname: req.query.lastname,
     });
-  } else {
-    res.status(404).json({ message: "Employee not found" });
+    res.status(201).json(result);
+  } catch (err) {
+    console.error(err);
   }
 };
 
-export const deleteEmployee = (req, res) => {
-  const empId = parseInt(req.query.id);
-  const employeeIndex = employeeData.data.findIndex(emp => emp.id === empId);
-  if (employeeIndex !== -1) {
-    const deletedEmployee = employeeData.data.splice(employeeIndex, 1);
-    res.json({
-      message: "Employee deleted successfully",
-      employee: deletedEmployee[0],
-    });
-  } else {
-    res.status(404).json({ message: "Employee not found" });
-  } 
+export const updateEmployeeDetails = async (req, res) => {
+  if (!req.query?.id) {
+    return res.status(400).json({ message: "ID parameter is required." });
+  }
+  const employeeFound = await EmployeeData.findOne({
+    _id: req.query.id,
+  }).exec();
+  if (!employeeFound) {
+    return res
+      .status(204)
+      .json({ message: `No employee matches ID ${req.query.id}.` });
+  }
+  if (req.query?.firstname) employeeFound.firstname = req.query.firstname;
+  if (req.query?.lastname) employeeFound.lastname = req.query.lastname;
+  const result = await employeeFound.save();
+  res.json({ message: "Details Updated Successfully", result });
+};
+
+export const deleteEmployee = async (req, res) => {
+  if (!req.query?.id)
+    return res.status(400).json({ message: "Employee ID required." });
+
+  const employeeFound = await EmployeeData.findOne({
+    _id: req.query.id,
+  }).exec();
+
+  if (!employeeFound) {
+    return res
+      .status(204)
+      .json({ message: `No employee matches ID ${req.query.id}.` });
+  }
+  const result = await employeeFound.deleteOne();
+  res.json({ meesage: "Employee data deleted successfully", result });
 };
 
 export default {
   getAllEmployeeDetails,
   addNewEmployee,
   updateEmployeeDetails,
-  deleteEmployee
+  deleteEmployee,
 };

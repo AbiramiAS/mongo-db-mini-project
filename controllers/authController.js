@@ -1,36 +1,26 @@
-import { userData } from "../model/users.js";
+import UserData from "../model/users.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import fsPromise from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
 
-const userDB = {
-  users: userData,
-  setUsers: function (data) {
-    this.users = data;
-  },
-};
 
-export const getAllUserData = (req, res) => {
-  res.json(userData);
+export const getAllUserData = async(req, res) => {
+   const user = await UserData.find();
+    if (!user) return res.status(204).json({ 'message': 'No data found.' });
+    res.json(user);
 };
 
 export const authenticateUser = async (req, res) => {
   const { username, password } = req.query;
-
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-
   if (!username || !password)
     return res
       .status(400)
       .json({ message: "Both Username and password are required" });
 
-  const loggedinUser = userData.find((user) => user.username === username);
+  const loggedinUser = await UserData.findOne({ username: username });
+  console.log("loggedinUser---", loggedinUser);
   const matchFound = loggedinUser
     ? await bcrypt.compare(password, loggedinUser.password)
     : null;
@@ -47,11 +37,7 @@ export const authenticateUser = async (req, res) => {
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "1d" }
     );
-    await fsPromise.writeFile(
-      path.join(__dirname, "..", "model", "users.js"),
-      `export const userData = ${JSON.stringify(userDB.users, null, 2)};`
-    );
-    userDB.setUsers(loggedinUser, refreshToken);
+
     res.cookie("jwt", refreshToken, {
       httpOnly: true,
       sameSite: "None",

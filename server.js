@@ -49,7 +49,6 @@ app.get("/", (req, res) => {
 
 app.use(verifyJWT);
 
-
 mongoose.connection.once("open", () => {
   console.log("Connection to MongoDB is successful");
   app.listen(PORT, () => console.log(`Listening on port ${PORT}`));

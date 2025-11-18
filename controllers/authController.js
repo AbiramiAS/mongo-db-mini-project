@@ -20,7 +20,6 @@ export const authenticateUser = async (req, res) => {
       .json({ message: "Both Username and password are required" });
 
   const loggedinUser = await UserData.findOne({ username: username });
-  console.log("loggedinUser---", loggedinUser);
   const matchFound = loggedinUser
     ? await bcrypt.compare(password, loggedinUser.password)
     : null;
@@ -38,6 +37,10 @@ export const authenticateUser = async (req, res) => {
       { expiresIn: "1d" }
     );
 
+    loggedinUser.refreshToken = refreshToken;
+  
+    const result = await loggedinUser.save();
+    console.log("result", result);
     res.cookie("jwt", refreshToken, {
       httpOnly: true,
       sameSite: "None",
@@ -46,7 +49,7 @@ export const authenticateUser = async (req, res) => {
     });
     res
       .status(200)
-      .json({ message: "Authentication successful", Token: accessToken });
+      .json({ message: "Authentication successful", userRole, accessToken });
   } else {
     res.status(401).json({ message: "Authentication failed" });
   }

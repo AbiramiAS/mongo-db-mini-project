@@ -9,11 +9,17 @@ import refreshRoutes from "./routes/refreshRoutes.js";
 import verifyJWT from "./middlewares/verifyJWT.js";
 import cookieParser from "cookie-parser";
 import credentials from "./middlewares/credentials.js";
-
-
+import mongoose from "mongoose";
+import connectDB from "./configs/dbconnection.js";
 // dotenv.config();
 const __dirname = path.resolve();
+//connect this app to mongoose
+connectDB();
 
+//port configuration
+const PORT = process.env.PORT || 4000;
+
+//express app initialization
 const app = express();
 
 app.use(express.json());
@@ -43,6 +49,8 @@ app.get("/", (req, res) => {
 
 app.use(verifyJWT);
 
-//port configuration
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
+
+mongoose.connection.once("open", () => {
+  console.log("Connection to MongoDB is successful");
+  app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+});

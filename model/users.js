@@ -24,6 +24,7 @@ const userSchema = new Schema({
       default: 5150,
     },
   },
+  refreshToken : String
 });
 
 const UserData = mongoose.model("Users", userSchema);

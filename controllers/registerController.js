@@ -8,7 +8,6 @@ export const registerNewUser = async (req, res) => {
       .status(400)
       .json({ message: "Both Username and password are required." });
   const existingUser = await UserData.findOne({ username: username }).exec();
-  console.log("existingUser", existingUser);
   if (existingUser) {
     return res.status(409).json({ message: "Username already exists" });
   }

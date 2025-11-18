@@ -1,35 +1,27 @@
-import { userData } from "../model/users.js";
+import UserData from "../model/users.js";
 import bcrypt from "bcrypt";
-import fsPromise from "fs/promises";
-import path, { dirname } from "path";
-
-const userDB = {
-  users: userData,
-  setUsers: function (data) {
-    this.users = data;
-  },
-};
 
 export const registerNewUser = async (req, res) => {
   const { username, password } = req.query;
-  const existingUser = userDB.users.find((u) => u.username === username);
+  if (!username || !password)
+    return res
+      .status(400)
+      .json({ message: "Both Username and password are required." });
+  const existingUser = await UserData.findOne({ username: username }).exec();
+  console.log("existingUser", existingUser);
   if (existingUser) {
     return res.status(409).json({ message: "Username already exists" });
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = {
+  const newUser = await UserData.create({
     "username": username,
     "roles": { User: 2001 },
-    "password": hashedPassword,
-  };
-  userDB.setUsers([...userDB.users, newUser]);
-  await fsPromise.writeFile(
-    path.join(dirname.name, "..", "model", "users.js"),
-    `export const userData = ${JSON.stringify(userDB.users, null, 2)};`
-  );
+    "password": hashedPassword
+  });
+
   res
     .status(201)
-    .json({ message: "User registered successfully", user: newUser });
+    .json({ message: "New User registered successfully", user: newUser });
 };
 
 export default {
